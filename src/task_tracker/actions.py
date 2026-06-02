@@ -14,7 +14,12 @@ def _load_tasks(file_name=SAFE_FILE):
             data = json.load(f)
             tasks = {}
             for task_id, task_data in data.items():
-                tasks[int(task_id)] = Question(task_data["name"], task_data["status"])
+                tasks[int(task_id)] = Question(
+                    task_data["description"],
+                    task_data["status"],
+                    task_data.get("createdAt"),
+                    task_data.get("updatedAt")
+                )
             return tasks
         except json.decoder.JSONDecodeError:
             return {}
@@ -24,8 +29,11 @@ def _save_tasks(tasks, file_name=SAFE_FILE):
     data = {}
     for task_id, task in tasks.items():
         data[task_id] = {
-            "name": task.name,
+            "id": int(task_id),
+            "description": task.description,
             "status": task.status,
+            "createdAt": task.created_at,
+            "updatedAt": task.updated_at,
         }
 
     with open(file_name, "w", encoding="utf-8") as f:
@@ -38,22 +46,22 @@ def init(file_name=SAFE_FILE):
         json.dump({}, f)
 
 
-def add(name):
-    print(f"Adding task: {name}")
+def add(description):
+    print(f"Adding task: {description}")
     tasks = _load_tasks()
     next_id = max(tasks.keys()) + 1 if tasks else 1
 
-    new_task = Question(name, "todo")
+    new_task = Question(description, "todo")
     tasks[next_id] = new_task
     _save_tasks(tasks)
 
 
-def update(task_id, new_name):
-    print(f"Updating task ID {task_id} with name: {new_name}")
+def update(task_id, new_description):
+    print(f"Updating task ID {task_id} with description: {new_description}")
     tasks = _load_tasks()
 
     if task_id in tasks:
-        tasks[task_id].name = new_name
+        tasks[task_id].update(new_description)
         _save_tasks(tasks)
     else:
         print(f"Task {task_id} not found")
@@ -105,7 +113,7 @@ def list_tasks(filter_status='all'):
         if filter_status and filter_status != 'all' and task.status.lower() != filter_status.lower():
             continue
 
-        print(f"[{task_id}] {task.name:<30} | Status: {task.status}")
+        print(f"[{task_id}] {task.description:<30} | Status: {task.status}")
         found_any = True
 
     if not found_any:
